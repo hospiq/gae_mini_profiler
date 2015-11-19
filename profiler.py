@@ -584,7 +584,7 @@ class ProfilerWSGIMiddleware(object):
         CurrentRequestId.set(None)
 
         # Never profile calls to the profiler itself to avoid endless recursion.
-        if (not config.should_profile() or
+        if (not config.should_profile(environ) or
             environ.get("PATH_INFO", "").startswith("/gae_mini_profiler/")):
             result = self.app(environ, start_response)
             for value in result:
