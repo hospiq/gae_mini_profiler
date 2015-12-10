@@ -1,4 +1,4 @@
-# Google App Engine Mini Profiler
+# Google App Engine Mini Profiler - Hospital IQ fork
 
 gae_mini_profiler is a quick drop-in WSGI app that provides ubiquitous profiling of your existing GAE projects. It exposes RPC statistics and CPU profiling output for users of your choosing on your production site. Only requests coming from users of your choosing will be profiled, and others will not suffer any performance degradation, so you can use this profiler to learn about production performance without stressing about slowing users down. See screenshots and features below.
 
