@@ -12,23 +12,31 @@ import util
 #
 # These functions will be run once per request, so make sure they are fast.
 #
+# If you need access to the environ use the `with_environ` decorator.
+#
 # Example:
 #   ...in appengine_config.py:
 #       def gae_mini_profiler_should_profile_production():
 #           from google.appengine.api import users
 #           return users.is_current_user_admin()
 
-def _should_profile_production_default(environ):
+def _should_profile_production_default():
     """Default to disabling in production if this function isn't overridden.
 
     Can be overridden in appengine_config.py"""
     return False
 
-def _should_profile_development_default(environ):
+def _should_profile_development_default():
     """Default to enabling in development if this function isn't overridden.
 
     Can be overridden in appengine_config.py"""
     return True
+
+def with_environ(func):
+    """Decorator to distinguish should_profile_*() methods that need access
+    to the environ"""
+    func._accept_environ = True
+    return func
 
 _config = lib_config.register("gae_mini_profiler", {
     "should_profile_production": _should_profile_production_default,
@@ -37,6 +45,13 @@ _config = lib_config.register("gae_mini_profiler", {
 def should_profile(environ):
     """Returns true if the current request should be profiles."""
     if util.dev_server:
-        return _config.should_profile_development(environ)
+        func = _config.should_profile_development
     else:
-        return _config.should_profile_production(environ)
+        func = _config.should_profile_production
+
+    if getattr(func, '_accept_environ', False):
+        args = environ,
+    else:
+        args = tuple()
+
+    return func(*args)
