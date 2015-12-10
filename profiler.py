@@ -577,9 +577,15 @@ class RequestProfiler(object):
 class ProfilerWSGIMiddleware(object):
 
     def __init__(self, app):
-        self.app = app
+        self.app = CallableResultHolder(app)
 
     def __call__(self, environ, start_response):
+        """
+        Wrap our generator to provide access to the .close() method from self.app
+        """
+        return CloseableIterator(self._call(environ, start_response), self.app.result)
+
+    def _call(self, environ, start_response):
 
         CurrentRequestId.set(None)
 
@@ -689,3 +695,41 @@ class ProfilerWSGIMiddleware(object):
                 headers_modified.append(header)
 
         return headers_modified
+
+
+class CallableResultHolder(object):
+    """
+    Wraps a callable and saves the result
+    """
+
+    def __init__(self, callable):
+        self.callable = callable
+        self._result = None
+
+    def result(self):
+        """
+        As property so can be passed as reference then updated
+        """
+        return self._result
+
+    def __call__(self, *args):
+        self._result = self.callable(*args)
+        return self._result
+
+
+class CloseableIterator(object):
+    """
+    Wraps an iterator while adding a .close() method from another object which is provided by a callback function
+    """
+
+    def __init__(self, iterator, close_provider):
+        self.iterator = iterator
+        self.close_provider = close_provider
+
+    def __iter__(self):
+        return self.iterator
+
+    def close(self):
+        closer = self.close_provider()
+        if hasattr(closer, 'close'):
+            closer.close()
